@@ -19,7 +19,7 @@ The system is composed of five independent, containerized services orchestrated 
 
 1. Clone the repository
 ```Bash
-git clone <your-repo-url>
+git clone https://github.com/abhayverma/mini-scada
 cd mini-scada
 ```
 2. Environment & Secrets Management
