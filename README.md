@@ -1,6 +1,8 @@
 # Mini-SCADA Industrial HMI System
 A production-grade, containerized industrial Supervisory Control and Data Acquisition (SCADA) system. This project features a decoupled microservices architecture designed for real-time telemetry ingestion, fault monitoring, and secure grid operations.
 
+![Uploading Screenshot 2026-06-27 at 1.32.04 AM.png…]()
+
 ## 🚀 Architecture Overview
 The system is composed of five independent, containerized services orchestrated via Docker Compose.
 - *Ingestion Layer:* Paho MQTT broker captures real-time data from grid simulators.
