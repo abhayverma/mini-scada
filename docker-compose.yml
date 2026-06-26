@@ -1,0 +1,138 @@
+services:
+  # ----------------------------------------
+  # 1. Message Broker (Mosquitto)
+  # ----------------------------------------
+  scada-broker:
+    image: eclipse-mosquitto:2
+    container_name: scada-broker
+    ports:
+      - "1883:1883" # Standard MQTT
+      - "9001:9001" # WebSockets for MQTT
+    volumes:
+      - ./simulator/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - scada-net
+
+  # ----------------------------------------
+  # 2. Scada Simulator
+  # ----------------------------------------
+  simulator:
+    build: 
+      context: ./simulator
+    container_name: scada-simulator
+    network_mode: "service:scada-broker" # Shares network with the broker
+    depends_on:
+      - scada-broker
+
+  # ----------------------------------------
+  # 3. Relational & Time-Series Database
+  # ----------------------------------------
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: scada-db
+    environment:
+      POSTGRES_USER: scada_user
+      POSTGRES_PASSWORD: scada_password
+      POSTGRES_DB: scada_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - scada-db-data:/var/lib/postgresql/data
+    networks:
+      - scada-net
+
+  # ----------------------------------------
+  # 4. In-Memory Cache (State & Pub/Sub)
+  # ----------------------------------------
+  redis:
+    image: redis:alpine
+    container_name: scada-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - scada-net
+
+  # ----------------------------------------
+  # 5a. Backend Worker (Data Pipeline)
+  # ----------------------------------------
+  worker:
+    build:
+      context: ./backend
+    container_name: scada-worker
+    command: ["python", "-u", "-m", "app.worker"]
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - scada-broker
+      - timescaledb
+      - redis
+    networks:
+      - scada-net
+
+  # ----------------------------------------
+  # 5b. Backend API (FastAPI)
+  # ----------------------------------------
+  api:
+    build:
+      context: ./backend
+    container_name: scada-api
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - scada-broker
+      - timescaledb
+      - redis
+    networks:
+      - scada-net
+  
+  # ----------------------------------------
+  # 5c. Database Automation Service (Runs Once)
+  # ----------------------------------------
+  db-seed:
+    build:
+      context: ./backend
+    container_name: scada-db-seed
+    command: ["python", "-u", "seed_runner.py"]
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - timescaledb
+    networks:
+      - scada-net
+
+  # ----------------------------------------
+  # 6. Frontend (User Interface HMI)
+  # ----------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+    container_name: scada-frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # This prevents Mac from overwriting the container's Linux node_modules
+    depends_on:
+      - api
+      - worker
+    networks:
+      - scada-net
+
+# ----------------------------------------
+# Volumes and Networks Definition
+# ----------------------------------------
+volumes:
+  scada-db-data:
+
+networks:
+  scada-net:
+    driver: bridge
