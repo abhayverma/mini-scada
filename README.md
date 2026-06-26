@@ -1,7 +1,7 @@
 # Mini-SCADA Industrial HMI System
 A production-grade, containerized industrial Supervisory Control and Data Acquisition (SCADA) system. This project features a decoupled microservices architecture designed for real-time telemetry ingestion, fault monitoring, and secure grid operations.
 
-![Uploading Screenshot 2026-06-27 at 1.32.04 AM.png…]()
+<img width="1440" height="779" alt="Screenshot 2026-06-27 at 1 41 43 AM" src="https://github.com/user-attachments/assets/36260851-78ae-4ebb-9e98-c83c65199f61" />
 
 ## 🚀 Architecture Overview
 The system is composed of five independent, containerized services orchestrated via Docker Compose.
